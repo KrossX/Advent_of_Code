@@ -12,6 +12,11 @@ typedef __int64 s64;
 #define INPUT_SIZE 10240
 #include "day17_data.c"
 
+#define DISPSIZE 64
+char display[DISPSIZE*DISPSIZE];
+int dx, dy;
+int part1;
+
 #define param(X) (m##X==0?input[n##X]:(m##X==1?n##X:input[n##X+rel]))
 #define param_out(X) (input[n##X+(m##X==2?rel:0)])
 
@@ -44,6 +49,16 @@ void data_out(s64 x)
 {
 	if(x < 256) {
 		char c = x&0xFF;
+		
+		if(part1) {
+			if(c == '\n') {
+				dy++;
+				dx=0;
+			} else {
+				display[dy*DISPSIZE+dx++] = c;
+			}
+		}
+
 		putchar(c);
 	} else {
 		printf("OUT: %lld\n", x);
@@ -95,6 +110,66 @@ void run(void)
 		default: printf("Unknown Opcode: %lld\n", op); return;
 		}
 	}
+}
+
+struct ivec2 {
+	int x, y;
+};
+
+struct ivec2 crossing[64];
+int crossidx;
+
+void add_crossing(int x, int y)
+{
+	int i;
+	for(i = 0; i < crossidx; i++) {
+		if(crossing[i].x == x && crossing[i].y == y)
+			return;
+	}
+	
+	crossing[crossidx].x = x;
+	crossing[crossidx].y = y;
+	crossidx++;
+}
+
+char get_pixel(int x, int y)
+{
+	if(x < 0 || x >= DISPSIZE) return 0;
+	if(y < 0 || y >= DISPSIZE) return 0;
+	return display[y*DISPSIZE+x];
+}
+
+int check_block(int x, int y)
+{
+	int count = 0;
+	
+	if(get_pixel(x-1,y) == '#') count++;
+	if(get_pixel(x+1,y) == '#') count++;
+	if(get_pixel(x,y-1) == '#') count++;
+	if(get_pixel(x,y+1) == '#') count++;
+	
+	return count;
+}
+
+void run1(void)
+{
+	int x,y;
+	
+	part1 = 1;
+	run();
+	
+	for(y = 0; y < DISPSIZE; y++)
+	for(x = 0; x < DISPSIZE; x++) {
+		if(get_pixel(x,y) == '#' && check_block(x,y) > 2)
+			add_crossing(x,y);
+	}
+
+	y = 0;
+	for(x = 0; x < crossidx; x++) {
+		y += crossing[x].x * crossing[x].y;
+	}
+	
+	printf("Alignment sum: %d\n", y);
 }
 
 int main(void)
